@@ -1,20 +1,15 @@
 #!/bin/bash
+set -e
 
-# Start virtual framebuffer
-Xvfb :1 -screen 0 1280x720x24 &
+# Start X virtual framebuffer
+Xvfb :1 -screen 0 1024x768x16 &
+
+# Start fluxbox window manager
 export DISPLAY=:1
-
-# Start Fluxbox window manager
 fluxbox &
 
-# Start x11vnc server
-x11vnc -display :1 -nopw -listen 0.0.0.0 -xkb -forever &
+# Start x11vnc to allow VNC connections
+x11vnc -display :1 -nopw -forever -shared &
 
-# Start noVNC web client (fixed path)
-/opt/novnc/launch.sh --vnc localhost:5900 --listen 8080 &
-
-# Start Chromium browser in virtual display
-chromium --no-sandbox --disable-gpu --start-maximized &
-
-# Keep container running
-tail -f /dev/null
+# Start noVNC web client
+/opt/novnc/utils/launch.sh --vnc localhost:5900
