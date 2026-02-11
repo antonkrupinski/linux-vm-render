@@ -1,15 +1,25 @@
 #!/bin/bash
 set -e
 
-# Start X virtual framebuffer
-Xvfb :1 -screen 0 1024x768x16 &
+echo "Starting Xvfb..."
+Xvfb :0 -screen 0 1024x768x16 &
 
-# Start fluxbox window manager
-export DISPLAY=:1
+echo "Starting fluxbox..."
 fluxbox &
 
-# Start x11vnc to allow VNC connections
-x11vnc -display :1 -nopw -forever -shared &
+echo "Starting x11vnc..."
+x11vnc -display :0 -nopw -forever &
 
-# Start noVNC web client
-/opt/novnc/utils/launch.sh --vnc localhost:5900
+# Check if launch.sh exists
+if [ -f /opt/novnc/utils/launch.sh ]; then
+    echo "Starting noVNC..."
+    /opt/novnc/utils/launch.sh --vnc localhost:5900
+else
+    echo "ERROR: /opt/novnc/utils/launch.sh not found!"
+    echo "Contents of /opt/novnc/utils:"
+    ls -l /opt/novnc/utils
+    exit 1
+fi
+
+# Keep container running
+tail -f /dev/null
