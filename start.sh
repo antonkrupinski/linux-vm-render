@@ -10,14 +10,13 @@ fluxbox &
 echo "Starting x11vnc..."
 x11vnc -display :0 -nopw -forever &
 
-# Check if launch.sh exists
-if [ -f /opt/novnc/utils/launch.sh ]; then
+# Start noVNC using websockify directly
+if [ -d /opt/novnc ]; then
     echo "Starting noVNC..."
-    /opt/novnc/utils/launch.sh --vnc localhost:5900
+    /opt/novnc/utils/websockify/run --web /opt/novnc 6080 localhost:5900
 else
-    echo "ERROR: /opt/novnc/utils/launch.sh not found!"
-    echo "Contents of /opt/novnc/utils:"
-    ls -l /opt/novnc/utils
+    echo "ERROR: /opt/novnc directory not found!"
+    ls -l /opt
     exit 1
 fi
 
