@@ -1,24 +1,42 @@
+# Base image
 FROM ubuntu:22.04
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    wget git xterm fluxbox x11vnc xvfb chromium-browser \
-    python3 python3-pip python3-dev \
-    novnc websockify \
-    && rm -rf /var/lib/apt/lists/*
+# Set non-interactive frontend for apt
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Setup noVNC
-RUN mkdir -p /opt/novnc \
-    && wget -qO- https://github.com/novnc/noVNC/archive/refs/heads/master.tar.gz | tar xz --strip-components=1 -C /opt/novnc \
-    && mkdir -p /opt/novnc/utils/websockify \
-    && wget -qO- https://github.com/novnc/websockify/archive/refs/heads/master.tar.gz | tar xz --strip-components=1 -C /opt/novnc/utils/websockify
+# Set timezone to UTC
+RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
 
-# Copy start script
+# Update and install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+        wget \
+        git \
+        xterm \
+        fluxbox \
+        x11vnc \
+        xvfb \
+        chromium-browser \
+        novnc \
+        python3 \
+        python3-pip \
+        tzdata && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install noVNC and websockify manually
+RUN mkdir -p /opt/novnc && \
+    wget -qO- https://github.com/novnc/noVNC/archive/refs/heads/master.tar.gz | tar xz --strip-components=1 -C /opt/novnc && \
+    mkdir -p /opt/novnc/utils/websockify && \
+    wget -qO- https://github.com/novnc/websockify/archive/refs/heads/master.tar.gz | tar xz --strip-components=1 -C /opt/novnc/utils/websockify
+
+# Copy your start script
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Expose noVNC port
-EXPOSE 8080
+EXPOSE 6080
 
-# Run start script
+# Run start.sh by default
 CMD ["/start.sh"]
