@@ -1,21 +1,26 @@
-# Base image
+# Use Ubuntu 22.04 base image
 FROM ubuntu:22.04
+
+# Set environment variables to avoid prompts during install
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
+    chromium-browser \
+    firefox \
     xvfb \
     x11vnc \
     fluxbox \
     wget \
     curl \
     net-tools \
-    firefox \
-    chromium-browser \
+    git \
     vim \
     nano \
-    git \
+    python3 \
+    python3-pip \
+    sudo \
+    supervisor \
     && rm -rf /var/lib/apt/lists/*
 
 # Download noVNC
@@ -28,8 +33,8 @@ RUN mkdir -p /opt/novnc \
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-# Expose the port noVNC will run on
+# Expose the noVNC port
 EXPOSE 8080
 
-# Run start script
+# Start the VM
 CMD ["/start.sh"]
