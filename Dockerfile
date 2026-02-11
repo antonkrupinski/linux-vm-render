@@ -1,53 +1,34 @@
 # Base image
 FROM ubuntu:22.04
 
+# Set environment
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:1
 
-# Update and install essential packages
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    bash \
-    curl \
-    wget \
-    git \
-    sudo \
-    python3 \
-    python3-pip \
-    nodejs \
-    npm \
-    openjdk-17-jdk \
-    docker.io \
-    unzip \
-    cmake \
-    g++ \
-    make \
-    vim \
-    htop \
-    tmux \
-    zsh \
-    libjson-c-dev \
-    libwebsockets-dev \
-    libssl-dev \
+    wget curl git vim xvfb x11vnc fluxbox sudo unzip gnupg \
+    ca-certificates fonts-liberation novnc websockify \
     && apt-get clean
 
-# Install ttyd (terminal in browser)
-RUN git clone https://github.com/tsl0922/ttyd.git /ttyd \
-    && cd /ttyd && mkdir build && cd build \
-    && cmake .. && make && make install
+# Install Google Chrome
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
+    && rm google-chrome-stable_current_amd64.deb
 
-# Create a default user
-RUN useradd -m -s /bin/bash devuser && echo "devuser:devuser" | chpasswd && adduser devuser sudo
+# Set up noVNC
+RUN mkdir -p /opt/novnc \
+    && git clone https://github.com/novnc/noVNC.git /opt/novnc \
+    && git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify
 
-# Set persistent workspace
-RUN mkdir -p /home/devuser/workspace
-VOLUME ["/home/devuser/workspace"]
-
-# Expose the port (Render uses $PORT)
-ENV PORT=10000
+# Use Render's assigned port
+ENV PORT=8080
 EXPOSE $PORT
 
-# Use tmux + ttyd for multiple shells
-USER devuser
-WORKDIR /home/devuser/workspace
-
-# Start ttyd with tmux for multiple terminals
-CMD ["sh", "-c", "tmux new-session -s main \; set-option -g mouse on \; attach-session & ttyd -p $PORT tmux attach-session -t main"]
+# Startup script
+CMD bash -c "\
+    Xvfb :1 -screen 0 1280x720x16 & \
+    fluxbox & \
+    x11vnc -display :1 -nopw -forever -listen 0.0.0.0 -xkb & \
+    /opt/novnc/utils/launch.sh --vnc localhost:5900 --listen \$PORT --web /opt/novnc & \
+    google-chrome --no-sandbox --display=:1 --start-maximized"
