@@ -1,34 +1,57 @@
 # Base image
 FROM ubuntu:22.04
 
-# Set environment
+# Prevent prompts during install
 ENV DEBIAN_FRONTEND=noninteractive
-ENV DISPLAY=:1
 
-# Install dependencies
+# Install basics and languages
 RUN apt-get update && apt-get install -y \
-    wget curl git vim xvfb x11vnc fluxbox sudo unzip gnupg \
-    ca-certificates fonts-liberation novnc websockify \
-    && apt-get clean
+    sudo \
+    wget \
+    curl \
+    git \
+    vim \
+    nano \
+    unzip \
+    software-properties-common \
+    python3 python3-pip \
+    openjdk-17-jdk \
+    nodejs npm \
+    default-jre \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Google Chrome
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-    && rm google-chrome-stable_current_amd64.deb
+# Install Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set up noVNC
+# Install Xvfb, fluxbox, x11vnc, and noVNC
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    fluxbox \
+    x11vnc \
+    websockify \
+    novnc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Setup noVNC
 RUN mkdir -p /opt/novnc \
-    && git clone https://github.com/novnc/noVNC.git /opt/novnc \
-    && git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify
+    && ln -s /usr/share/novnc /opt/novnc
 
-# Use Render's assigned port
+# Expose Render port
 ENV PORT=8080
 EXPOSE $PORT
 
-# Startup script
-CMD bash -c "\
-    Xvfb :1 -screen 0 1280x720x16 & \
-    fluxbox & \
-    x11vnc -display :1 -nopw -forever -listen 0.0.0.0 -xkb & \
-    /opt/novnc/utils/launch.sh --vnc localhost:5900 --listen \$PORT --web /opt/novnc & \
-    google-chrome --no-sandbox --display=:1 --start-maximized"
+# Create start script
+RUN echo '#!/bin/bash\n\
+Xvfb :1 -screen 0 1280x720x16 &\n\
+fluxbox &\n\
+x11vnc -display :1 -nopw -forever -listen 0.0.0.0 -noxdamage -nowf -cursor arrow &\n\
+/opt/novnc/utils/launch.sh --vnc localhost:5900 --listen $PORT --web /opt/novnc &\n\
+/bin/bash' > /start.sh
+RUN chmod +x /start.sh
+
+# Start everything
+CMD ["/start.sh"]
