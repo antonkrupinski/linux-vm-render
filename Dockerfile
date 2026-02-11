@@ -1,29 +1,13 @@
-# Use Ubuntu 22.04 base image
 FROM ubuntu:22.04
-
-# Set environment variables to avoid prompts during install
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    chromium-browser \
-    firefox \
-    xvfb \
-    x11vnc \
-    fluxbox \
-    wget \
-    curl \
-    net-tools \
-    git \
-    vim \
-    nano \
-    python3 \
-    python3-pip \
-    sudo \
-    supervisor \
+    wget git xterm fluxbox x11vnc xvfb chromium-browser \
+    python3 python3-pip python3-dev \
+    novnc websockify \
     && rm -rf /var/lib/apt/lists/*
 
-# Download noVNC
+# Setup noVNC
 RUN mkdir -p /opt/novnc \
     && wget -qO- https://github.com/novnc/noVNC/archive/refs/heads/master.tar.gz | tar xz --strip-components=1 -C /opt/novnc \
     && mkdir -p /opt/novnc/utils/websockify \
@@ -33,8 +17,8 @@ RUN mkdir -p /opt/novnc \
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-# Expose the noVNC port
+# Expose noVNC port
 EXPOSE 8080
 
-# Start the VM
+# Run start script
 CMD ["/start.sh"]
